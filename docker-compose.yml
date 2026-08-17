@@ -72,14 +72,14 @@ services:
         condition: service_healthy
     image: "minio/mc:latest"
     restart: "no"
-    entrypoint: >
-      /bin/sh -c "
-      /usr/bin/mc alias set myminio http://minio:${MINIO_PORT} ${AWS_ACCESS_KEY_ID} ${AWS_SECRET_ACCESS_KEY};
-      /usr/bin/mc mb myminio/${MINIO_BUCKET};
-      exit 0;
-      "
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >
+        mc alias set myminio http://minio:${MINIO_PORT} ${AWS_ACCESS_KEY_ID} ${AWS_SECRET_ACCESS_KEY};
+        mc mb --ignore-existing myminio/${MINIO_BUCKET};
+        exit 0;
 
-any-sync-coordinator:
+  any-sync-coordinator:
     <<: *anysync-daemon
     depends_on:
       mongo-1:
