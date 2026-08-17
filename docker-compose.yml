@@ -1,16 +1,3 @@
-x-anysync-daemon: &anysync-daemon
-  restart: unless-stopped
-  deploy:
-    resources:
-      limits:
-        memory: ${ANY_SYNC_DAEMONS_MEMORY_LIMIT:-}
-
-x-anysync-node: &anysync-node
-  image: "ghcr.io/anyproto/any-sync-node:${ANY_SYNC_NODE_VERSION}"
-  depends_on:
-    any-sync-coordinator:
-      condition: service_started
-
 services:
   # generate and process any-sync configs
   any-sync-init:
@@ -19,6 +6,17 @@ services:
       context: .
       dockerfile: Dockerfile-any-sync-init
     volumes:
+      # NOTE: single-file bind mounts (like .env) are known to be created as
+      # DIRECTORIES by Coolify instead of files (coollabsio/coolify#3056, #3375, #8107).
+      # If any-sync-init fails to read .env correctly after deploying to Coolify,
+      # that's why. Workarounds, in order of preference:
+      #   1. Don't mount .env at all — pass the values your init script needs
+      #      as normal `environment:` entries instead (Coolify surfaces every
+      #      ${VAR} in the compose file as an editable env var in its UI anyway).
+      #   2. Use Coolify's `content:` volume annotation to have Coolify write
+      #      the file itself (see docs), instead of bind-mounting a repo file.
+      #   3. Disable "Preserve Repository During Deployment" for this app —
+      #      that setting is what triggers the bug in #3056.
       - ./.env:/code/.env:ro,Z
       - ./docker-generateconfig:/code/docker-generateconfig:ro,Z
       - ./etc:/code/etc:Z
@@ -103,7 +101,11 @@ services:
     command: ["/bin/any-sync-confapply", "-c", "/etc/any-sync-coordinator/config.yml", "-n", "/etc/any-sync-coordinator/network.yml", "-e"]
 
   any-sync-coordinator:
-    <<: *anysync-daemon
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: ${ANY_SYNC_DAEMONS_MEMORY_LIMIT:-}
     image: "ghcr.io/anyproto/any-sync-coordinator:${ANY_SYNC_COORDINATOR_VERSION}"
     depends_on:
       any-sync-init:
@@ -121,7 +123,11 @@ services:
       - "${STORAGE_DIR}/networkStore/any-sync-coordinator:/networkStore:Z"
 
   any-sync-filenode:
-    <<: *anysync-daemon
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: ${ANY_SYNC_DAEMONS_MEMORY_LIMIT:-}
     image: "ghcr.io/anyproto/any-sync-filenode:${ANY_SYNC_FILENODE_VERSION}"
     depends_on:
       redis:
@@ -140,7 +146,15 @@ services:
       - "${STORAGE_DIR}/networkStore/any-sync-filenode:/networkStore:Z"
 
   any-sync-node-1:
-    <<: [*anysync-daemon, *anysync-node]
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: ${ANY_SYNC_DAEMONS_MEMORY_LIMIT:-}
+    image: "ghcr.io/anyproto/any-sync-node:${ANY_SYNC_NODE_VERSION}"
+    depends_on:
+      any-sync-coordinator:
+        condition: service_started
     ports:
       - "${ANY_SYNC_NODE_1_PORT}:${ANY_SYNC_NODE_1_PORT}"
       - "${ANY_SYNC_NODE_1_QUIC_PORT}:${ANY_SYNC_NODE_1_QUIC_PORT}/udp"
@@ -154,7 +168,15 @@ services:
       - "${STORAGE_DIR}/networkStore/any-sync-node-1:/networkStore:Z"
 
   any-sync-node-2:
-    <<: [*anysync-daemon, *anysync-node]
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: ${ANY_SYNC_DAEMONS_MEMORY_LIMIT:-}
+    image: "ghcr.io/anyproto/any-sync-node:${ANY_SYNC_NODE_VERSION}"
+    depends_on:
+      any-sync-coordinator:
+        condition: service_started
     ports:
       - "${ANY_SYNC_NODE_2_PORT}:${ANY_SYNC_NODE_2_PORT}"
       - "${ANY_SYNC_NODE_2_QUIC_PORT}:${ANY_SYNC_NODE_2_QUIC_PORT}/udp"
@@ -168,7 +190,15 @@ services:
       - "${STORAGE_DIR}/networkStore/any-sync-node-2:/networkStore:Z"
 
   any-sync-node-3:
-    <<: [*anysync-daemon, *anysync-node]
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: ${ANY_SYNC_DAEMONS_MEMORY_LIMIT:-}
+    image: "ghcr.io/anyproto/any-sync-node:${ANY_SYNC_NODE_VERSION}"
+    depends_on:
+      any-sync-coordinator:
+        condition: service_started
     ports:
       - "${ANY_SYNC_NODE_3_PORT}:${ANY_SYNC_NODE_3_PORT}"
       - "${ANY_SYNC_NODE_3_QUIC_PORT}:${ANY_SYNC_NODE_3_QUIC_PORT}/udp"
@@ -182,7 +212,11 @@ services:
       - "${STORAGE_DIR}/networkStore/any-sync-node-3:/networkStore:Z"
 
   any-sync-consensusnode:
-    <<: *anysync-daemon
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: ${ANY_SYNC_DAEMONS_MEMORY_LIMIT:-}
     image: "ghcr.io/anyproto/any-sync-consensusnode:${ANY_SYNC_CONSENSUSNODE_VERSION}"
     depends_on:
       any-sync-coordinator:
@@ -213,9 +247,9 @@ services:
     command:
       - |
         while true; do
-          echo "$(date): Running netcheck..."
+          echo "$$(date): Running netcheck..."
           any-sync-netcheck -c /conf/nodes.yml 2>&1 | tee /tmp/netcheck-last.log
-          echo "$(date): Netcheck completed, waiting 5 seconds..."
+          echo "$$(date): Netcheck completed, waiting 5 seconds..."
           sleep 5
         done
     stop_signal: SIGTERM
@@ -228,52 +262,52 @@ services:
   # usage: https://github.com/anyproto/any-sync-dockercompose/wiki/Anytype-cli
 
   # anytype-cli bootstrap - create bot account on first run
-  # anytype-cli_bootstrap:
-  #   image: "ghcr.io/anyproto/anytype-cli:${ANYTYPE_CLI_VERSION}"
-  #   restart: "no"
-  #   depends_on:
-  #     netcheck:
-  #       condition: service_healthy
-  #   volumes:
-  #     - ./etc/client.yml:/etc/anytype/network.yml:ro
-  #     - "${STORAGE_DIR}/anytype-cli:/root/.anytype:Z"
-  #   environment:
-  #     - ANYTYPE_CLI_ACCOUNT_NAME=${ANYTYPE_CLI_ACCOUNT_NAME:-anytype-bot}
-  #   entrypoint: >
-  #     /bin/sh -c "
-  #     if [ ! -f /root/.anytype/config.json ]; then
-  #       echo 'Creating bot account...';
-  #       /app/anytype serve &
-  #       SERVER_PID=$$!;
-  #       sleep 2;
-  #       /app/anytype auth create $${ANYTYPE_CLI_ACCOUNT_NAME} --network-config /etc/anytype/network.yml || true;
-  #       echo 'Waiting for account initialization...';
-  #       sleep 2;
-  #       kill $$SERVER_PID 2>/dev/null || true;
-  #       wait $$SERVER_PID 2>/dev/null || true;
-  #     else
-  #       echo 'Bot account already exists, skipping bootstrap';
-  #     fi;
-  #     exit 0;
-  #     "
+  anytype-cli_bootstrap:
+    image: "ghcr.io/anyproto/anytype-cli:${ANYTYPE_CLI_VERSION}"
+    restart: "no"
+    depends_on:
+      netcheck:
+        condition: service_healthy
+    volumes:
+      - ./etc/client.yml:/etc/anytype/network.yml:ro
+      - "${STORAGE_DIR}/anytype-cli:/root/.anytype:Z"
+    environment:
+      - ANYTYPE_CLI_ACCOUNT_NAME=${ANYTYPE_CLI_ACCOUNT_NAME:-anytype-bot}
+    entrypoint: >
+      /bin/sh -c "
+      if [ ! -f /root/.anytype/config.json ]; then
+        echo 'Creating bot account...';
+        /app/anytype serve &
+        SERVER_PID=$$!;
+        sleep 2;
+        /app/anytype auth create $${ANYTYPE_CLI_ACCOUNT_NAME} --network-config /etc/anytype/network.yml || true;
+        echo 'Waiting for account initialization...';
+        sleep 2;
+        kill $$SERVER_PID 2>/dev/null || true;
+        wait $$SERVER_PID 2>/dev/null || true;
+      else
+        echo 'Bot account already exists, skipping bootstrap';
+      fi;
+      exit 0;
+      "
 
   # anytype-cli server
-  # anytype-cli:
-  #   image: "ghcr.io/anyproto/anytype-cli:${ANYTYPE_CLI_VERSION}"
-  #   restart: unless-stopped
-  #   depends_on:
-  #     anytype-cli_bootstrap:
-  #       condition: service_completed_successfully
-  #   ports:
-  #     - "${ANYTYPE_CLI_GRPC_PORT}:31010"
-  #     - "${ANYTYPE_CLI_GRPC_WEB_PORT}:31011"
-  #     - "${ANYTYPE_CLI_API_PORT}:31012"
-  #   volumes:
-  #     - ./etc/client.yml:/etc/anytype/network.yml:ro
-  #     - "${STORAGE_DIR}/anytype-cli:/root/.anytype:Z"
-  #   healthcheck:
-  #     test: nc -z 127.0.0.1 31010 || exit 1
-  #     interval: 30s
-  #     timeout: 5s
-  #     start_period: 15s
-  #     retries: 3
+  anytype-cli:
+    image: "ghcr.io/anyproto/anytype-cli:${ANYTYPE_CLI_VERSION}"
+    restart: unless-stopped
+    depends_on:
+      anytype-cli_bootstrap:
+        condition: service_completed_successfully
+    ports:
+      - "${ANYTYPE_CLI_GRPC_PORT}:31010"
+      - "${ANYTYPE_CLI_GRPC_WEB_PORT}:31011"
+      - "${ANYTYPE_CLI_API_PORT}:31012"
+    volumes:
+      - ./etc/client.yml:/etc/anytype/network.yml:ro
+      - "${STORAGE_DIR}/anytype-cli:/root/.anytype:Z"
+    healthcheck:
+      test: nc -z 127.0.0.1 31010 || exit 1
+      interval: 30s
+      timeout: 5s
+      start_period: 15s
+      retries: 3
