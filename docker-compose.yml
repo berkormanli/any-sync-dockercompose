@@ -104,7 +104,7 @@ services:
     depends_on:
       minio:
         condition: service_healthy
-    image: "minio/mc:${MINIO_VERSION}"
+    image: "minio/mc:latest"
     restart: "no"
     entrypoint: >
       /bin/sh -c "
