@@ -74,36 +74,18 @@ services:
     restart: "no"
     entrypoint: >
       /bin/sh -c "
-      /usr/bin/mc config host add myminio http://minio:${MINIO_PORT} ${AWS_ACCESS_KEY_ID} ${AWS_SECRET_ACCESS_KEY};
+      /usr/bin/mc alias set myminio http://minio:${MINIO_PORT} ${AWS_ACCESS_KEY_ID} ${AWS_SECRET_ACCESS_KEY};
       /usr/bin/mc mb myminio/${MINIO_BUCKET};
       exit 0;
       "
 
-  any-sync-coordinator_bootstrap:
-    depends_on:
-      mongo-1:
-        condition: service_healthy
-    image: "ghcr.io/anyproto/any-sync-tools:${ANY_SYNC_TOOLS_VERSION}"
-    restart: "no"
-    entrypoint: >
-      /bin/sh -c "
-      any-sync-confignode -c /etc/any-sync/any-sync-coordinator.yml;
-      exit 0;
-      "
-    volumes:
-      - type: bind
-        source: /opt/anyproto/etc
-        target: /etc/any-sync
-        read_only: true
-        bind:
-          create_host_path: true
-
   any-sync-coordinator:
     <<: *anysync-daemon
     depends_on:
-      any-sync-coordinator_bootstrap:
-        condition: service_completed_successfully
+      mongo-1:
+        condition: service_healthy
     image: "ghcr.io/anyproto/any-sync-coordinator:${ANY_SYNC_COORDINATOR_VERSION}"
+    command: ["-c", "/etc/any-sync/any-sync-coordinator.yml"]
     ports:
       - "${ANY_SYNC_COORDINATOR_PORT}:${ANY_SYNC_COORDINATOR_PORT}"
       - "${ANY_SYNC_COORDINATOR_QUIC_PORT}:${ANY_SYNC_COORDINATOR_QUIC_PORT}/udp"
@@ -128,6 +110,7 @@ services:
       any-sync-coordinator:
         condition: service_started
     image: "ghcr.io/anyproto/any-sync-filenode:${ANY_SYNC_FILENODE_VERSION}"
+    command: ["-c", "/etc/any-sync/any-sync-filenode.yml"]
     ports:
       - "${ANY_SYNC_FILENODE_PORT}:${ANY_SYNC_FILENODE_PORT}"
       - "${ANY_SYNC_FILENODE_QUIC_PORT}:${ANY_SYNC_FILENODE_QUIC_PORT}/udp"
@@ -148,6 +131,7 @@ services:
       any-sync-coordinator:
         condition: service_started
     image: "ghcr.io/anyproto/any-sync-consensusnode:${ANY_SYNC_CONSENSUSNODE_VERSION}"
+    command: ["-c", "/etc/any-sync/any-sync-consensusnode.yml"]
     ports:
       - "${ANY_SYNC_CONSENSUSNODE_PORT}:${ANY_SYNC_CONSENSUSNODE_PORT}"
       - "${ANY_SYNC_CONSENSUSNODE_QUIC_PORT}:${ANY_SYNC_CONSENSUSNODE_QUIC_PORT}/udp"
@@ -164,6 +148,7 @@ services:
 
   any-sync-node-1:
     <<: *anysync-node
+    command: ["-c", "/etc/any-sync/any-sync-node-1.yml"]
     ports:
       - "${ANY_SYNC_NODE_1_PORT}:${ANY_SYNC_NODE_1_PORT}"
       - "${ANY_SYNC_NODE_1_QUIC_PORT}:${ANY_SYNC_NODE_1_QUIC_PORT}/udp"
@@ -180,6 +165,7 @@ services:
 
   any-sync-node-2:
     <<: *anysync-node
+    command: ["-c", "/etc/any-sync/any-sync-node-2.yml"]
     ports:
       - "${ANY_SYNC_NODE_2_PORT}:${ANY_SYNC_NODE_2_PORT}"
       - "${ANY_SYNC_NODE_2_QUIC_PORT}:${ANY_SYNC_NODE_2_QUIC_PORT}/udp"
@@ -196,6 +182,7 @@ services:
 
   any-sync-node-3:
     <<: *anysync-node
+    command: ["-c", "/etc/any-sync/any-sync-node-3.yml"]
     ports:
       - "${ANY_SYNC_NODE_3_PORT}:${ANY_SYNC_NODE_3_PORT}"
       - "${ANY_SYNC_NODE_3_QUIC_PORT}:${ANY_SYNC_NODE_3_QUIC_PORT}/udp"
@@ -209,26 +196,3 @@ services:
         target: /var/lib/any-sync-node
         bind:
           create_host_path: true
-
-  netcheck:
-    <<: *anysync-daemon
-    image: "ghcr.io/anyproto/any-sync-tools:${ANY_SYNC_TOOLS_VERSION}"
-    depends_on:
-      any-sync-node-1:
-        condition: service_started
-      any-sync-node-2:
-        condition: service_started
-      any-sync-node-3:
-        condition: service_started
-      any-sync-filenode:
-        condition: service_started
-    entrypoint: >
-      /bin/sh -c "
-      any-sync-netcheck -c /etc/any-sync/any-sync-coordinator.yml;
-      exit 0;
-      "
-    volumes:
-      - type: bind
-        source: /opt/anyproto/etc
-        target: /etc/any-sync
-        read_only: true
