@@ -19,9 +19,17 @@ services:
       context: .
       dockerfile: Dockerfile-any-sync-init
     volumes:
-      - ${PWD}/.env:/code/.env:ro,Z
-      - ${PWD}/docker-generateconfig:/code/docker-generateconfig:ro,Z
-      - ${PWD}/etc:/code/etc:Z
+      - type: bind
+        source: ./.env
+        target: /code/.env
+        read_only: true
+      - type: bind
+        source: ./docker-generateconfig
+        target: /code/docker-generateconfig
+        read_only: true
+      - type: bind
+        source: ./etc
+        target: /code/etc
       - "${STORAGE_DIR}:/code/storage:Z"
 
   mongo-1:
