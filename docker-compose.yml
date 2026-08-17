@@ -90,7 +90,7 @@ services:
       - "${ANY_SYNC_COORDINATOR_QUIC_PORT}:${ANY_SYNC_COORDINATOR_QUIC_PORT}/udp"
     volumes:
       - type: bind
-        source: /opt/anyproto/etc/any-sync-coordinator.yml
+        source: /opt/anyproto/etc/any-sync-coordinator/config.yml
         target: /etc/any-sync/config.yml
         read_only: true
       - type: bind
@@ -114,7 +114,7 @@ services:
       - "${ANY_SYNC_FILENODE_QUIC_PORT}:${ANY_SYNC_FILENODE_QUIC_PORT}/udp"
     volumes:
       - type: bind
-        source: /opt/anyproto/etc/any-sync-filenode.yml
+        source: /opt/anyproto/etc/any-sync-filenode/config.yml
         target: /etc/any-sync/config.yml
         read_only: true
       - type: bind
@@ -134,7 +134,7 @@ services:
       - "${ANY_SYNC_CONSENSUSNODE_QUIC_PORT}:${ANY_SYNC_CONSENSUSNODE_QUIC_PORT}/udp"
     volumes:
       - type: bind
-        source: /opt/anyproto/etc/any-sync-consensusnode.yml
+        source: /opt/anyproto/etc/any-sync-consensusnode/config.yml
         target: /etc/any-sync/config.yml
         read_only: true
       - type: bind
@@ -150,7 +150,7 @@ services:
       - "${ANY_SYNC_NODE_1_QUIC_PORT}:${ANY_SYNC_NODE_1_QUIC_PORT}/udp"
     volumes:
       - type: bind
-        source: /opt/anyproto/etc/any-sync-node-1.yml
+        source: /opt/anyproto/etc/any-sync-node-1/config.yml
         target: /etc/any-sync/config.yml
         read_only: true
       - type: bind
@@ -166,7 +166,7 @@ services:
       - "${ANY_SYNC_NODE_2_QUIC_PORT}:${ANY_SYNC_NODE_2_QUIC_PORT}/udp"
     volumes:
       - type: bind
-        source: /opt/anyproto/etc/any-sync-node-2.yml
+        source: /opt/anyproto/etc/any-sync-node-2/config.yml
         target: /etc/any-sync/config.yml
         read_only: true
       - type: bind
@@ -182,7 +182,7 @@ services:
       - "${ANY_SYNC_NODE_3_QUIC_PORT}:${ANY_SYNC_NODE_3_QUIC_PORT}/udp"
     volumes:
       - type: bind
-        source: /opt/anyproto/etc/any-sync-node-3.yml
+        source: /opt/anyproto/etc/any-sync-node-3/config.yml
         target: /etc/any-sync/config.yml
         read_only: true
       - type: bind
