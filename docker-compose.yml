@@ -13,35 +13,7 @@ x-anysync-node: &anysync-node
       condition: service_started
 
 services:
-  any-sync-init:
-    restart: "no"
-    build:
-      context: .
-      dockerfile: Dockerfile-any-sync-init
-    volumes:
-      - type: bind
-        source: ./.env
-        target: /code/.env
-        read_only: true
-      - type: bind
-        source: ./docker-generateconfig
-        target: /code/docker-generateconfig
-        read_only: true
-      - type: bind
-        source: ./etc
-        target: /code/etc
-        bind:
-          create_host_path: true
-      - type: bind
-        source: ./storage
-        target: /code/storage
-        bind:
-          create_host_path: true
-
   mongo-1:
-    depends_on:
-      any-sync-init:
-        condition: service_completed_successfully
     image: "mongo:${MONGO_VERSION}"
     restart: unless-stopped
     command: ["--replSet", "${MONGO_REPLICA_SET}", "--port", "${MONGO_1_PORT}"]
@@ -59,9 +31,6 @@ services:
       - "127.0.0.1:${MONGO_1_PORT}:${MONGO_1_PORT}"
 
   redis:
-    depends_on:
-      any-sync-init:
-        condition: service_completed_successfully
     image: "redis/redis-stack-server:${REDIS_VERSION}"
     restart: unless-stopped
     command: ["redis-server", "--port", "${REDIS_PORT}", "--dir", "/data/", "--appendonly", "yes", "--maxmemory", "${REDIS_MAXMEMORY}", "--maxmemory-policy", "noeviction", "--protected-mode", "no", "--loadmodule", "/opt/redis-stack/lib/redisbloom.so"]
@@ -78,9 +47,6 @@ services:
       - "127.0.0.1:${REDIS_PORT}:${REDIS_PORT}"
 
   minio:
-    depends_on:
-      any-sync-init:
-        condition: service_completed_successfully
     image: "minio/minio:${MINIO_VERSION}"
     restart: unless-stopped
     command: ["server", "/data", "--console-address", ":${MINIO_WEB_PORT}", "--address", ":${MINIO_PORT}"]
@@ -115,8 +81,6 @@ services:
 
   any-sync-coordinator_bootstrap:
     depends_on:
-      any-sync-init:
-        condition: service_completed_successfully
       mongo-1:
         condition: service_healthy
     image: "ghcr.io/anyproto/any-sync-tools:${ANY_SYNC_TOOLS_VERSION}"
@@ -128,7 +92,7 @@ services:
       "
     volumes:
       - type: bind
-        source: ./etc
+        source: /opt/anyproto/etc
         target: /etc/any-sync
         read_only: true
         bind:
@@ -145,7 +109,7 @@ services:
       - "${ANY_SYNC_COORDINATOR_QUIC_PORT}:${ANY_SYNC_COORDINATOR_QUIC_PORT}/udp"
     volumes:
       - type: bind
-        source: ./etc
+        source: /opt/anyproto/etc
         target: /etc/any-sync
         read_only: true
       - type: bind
@@ -169,7 +133,7 @@ services:
       - "${ANY_SYNC_FILENODE_QUIC_PORT}:${ANY_SYNC_FILENODE_QUIC_PORT}/udp"
     volumes:
       - type: bind
-        source: ./etc
+        source: /opt/anyproto/etc
         target: /etc/any-sync
         read_only: true
       - type: bind
@@ -189,7 +153,7 @@ services:
       - "${ANY_SYNC_CONSENSUSNODE_QUIC_PORT}:${ANY_SYNC_CONSENSUSNODE_QUIC_PORT}/udp"
     volumes:
       - type: bind
-        source: ./etc
+        source: /opt/anyproto/etc
         target: /etc/any-sync
         read_only: true
       - type: bind
@@ -205,7 +169,7 @@ services:
       - "${ANY_SYNC_NODE_1_QUIC_PORT}:${ANY_SYNC_NODE_1_QUIC_PORT}/udp"
     volumes:
       - type: bind
-        source: ./etc
+        source: /opt/anyproto/etc
         target: /etc/any-sync
         read_only: true
       - type: bind
@@ -221,7 +185,7 @@ services:
       - "${ANY_SYNC_NODE_2_QUIC_PORT}:${ANY_SYNC_NODE_2_QUIC_PORT}/udp"
     volumes:
       - type: bind
-        source: ./etc
+        source: /opt/anyproto/etc
         target: /etc/any-sync
         read_only: true
       - type: bind
@@ -237,7 +201,7 @@ services:
       - "${ANY_SYNC_NODE_3_QUIC_PORT}:${ANY_SYNC_NODE_3_QUIC_PORT}/udp"
     volumes:
       - type: bind
-        source: ./etc
+        source: /opt/anyproto/etc
         target: /etc/any-sync
         read_only: true
       - type: bind
@@ -265,6 +229,6 @@ services:
       "
     volumes:
       - type: bind
-        source: ./etc
+        source: /opt/anyproto/etc
         target: /etc/any-sync
         read_only: true
