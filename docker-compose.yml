@@ -33,7 +33,7 @@ services:
         bind:
           create_host_path: true
       - type: bind
-        source: ${STORAGE_DIR:-./storage}
+        source: ./storage
         target: /code/storage
         bind:
           create_host_path: true
@@ -47,7 +47,7 @@ services:
     command: ["--replSet", "${MONGO_REPLICA_SET}", "--port", "${MONGO_1_PORT}"]
     volumes:
       - type: bind
-        source: ${STORAGE_DIR:-./storage}/mongo-1
+        source: ./storage/mongo-1
         target: /data/db
         bind:
           create_host_path: true
@@ -67,7 +67,7 @@ services:
     command: ["redis-server", "--port", "${REDIS_PORT}", "--dir", "/data/", "--appendonly", "yes", "--maxmemory", "${REDIS_MAXMEMORY}", "--maxmemory-policy", "noeviction", "--protected-mode", "no", "--loadmodule", "/opt/redis-stack/lib/redisbloom.so"]
     volumes:
       - type: bind
-        source: ${STORAGE_DIR:-./storage}/redis
+        source: ./storage/redis
         target: /data
         bind:
           create_host_path: true
@@ -89,7 +89,7 @@ services:
       MINIO_ROOT_PASSWORD: "${AWS_SECRET_ACCESS_KEY}"
     volumes:
       - type: bind
-        source: ${STORAGE_DIR:-./storage}/minio
+        source: ./storage/minio
         target: /data
         bind:
           create_host_path: true
@@ -149,7 +149,7 @@ services:
         target: /etc/any-sync
         read_only: true
       - type: bind
-        source: ${STORAGE_DIR:-./storage}/networkstore/any-sync-coordinator
+        source: ./storage/networkstore/any-sync-coordinator
         target: /var/lib/any-sync-coordinator
         bind:
           create_host_path: true
@@ -173,7 +173,7 @@ services:
         target: /etc/any-sync
         read_only: true
       - type: bind
-        source: ${STORAGE_DIR:-./storage}/networkstore/any-sync-filenode
+        source: ./storage/networkstore/any-sync-filenode
         target: /var/lib/any-sync-filenode
         bind:
           create_host_path: true
@@ -193,7 +193,7 @@ services:
         target: /etc/any-sync
         read_only: true
       - type: bind
-        source: ${STORAGE_DIR:-./storage}/networkstore/any-sync-consensusnode
+        source: ./storage/networkstore/any-sync-consensusnode
         target: /var/lib/any-sync-consensusnode
         bind:
           create_host_path: true
@@ -209,7 +209,7 @@ services:
         target: /etc/any-sync
         read_only: true
       - type: bind
-        source: ${STORAGE_DIR:-./storage}/networkstore/any-sync-node-1
+        source: ./storage/networkstore/any-sync-node-1
         target: /var/lib/any-sync-node
         bind:
           create_host_path: true
@@ -225,7 +225,7 @@ services:
         target: /etc/any-sync
         read_only: true
       - type: bind
-        source: ${STORAGE_DIR:-./storage}/networkstore/any-sync-node-2
+        source: ./storage/networkstore/any-sync-node-2
         target: /var/lib/any-sync-node
         bind:
           create_host_path: true
@@ -241,7 +241,7 @@ services:
         target: /etc/any-sync
         read_only: true
       - type: bind
-        source: ${STORAGE_DIR:-./storage}/networkstore/any-sync-node-3
+        source: ./storage/networkstore/any-sync-node-3
         target: /var/lib/any-sync-node
         bind:
           create_host_path: true
